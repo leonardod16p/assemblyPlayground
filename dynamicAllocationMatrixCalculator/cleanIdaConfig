@@ -1,0 +1,8 @@
+#!/bin/bash
+
+nasm matrixCalculator.asm -o matrixCalculator.o -f elf64
+ld matrixCalculator.o -o matrixCalculator
+
+rm matrixCalculator.id*
+rm matrixCalculator.nam
+rm matrixCalculator.til
