@@ -91,17 +91,18 @@ _start:
 	
 	;;MATRIZ A
 	
-	SYS_WRITE 1, msgNumeroLinhasColunasA, msgSize1
-	SYS_READ 0, inputBuffer, 10
-	mov [tamanhoBuffer], al
-	mov al, byte [inputBuffer]
-	mov rcx, 0
-	call toNumber					;;Input vem na codificacao ASCII
+	SYS_WRITE 1, msgNumeroLinhasColunasA, msgSize1		;;Chamada de sistemas que printa na tela 
+	SYS_READ 0, inputBuffer, 2							;;chamada de sistema que le input do usuario e armazena em inputbuffer. retorna o tamanho da string inserida
+	mov [tamanhoBuffer], al								;;instrucao que pega o valor de retorno da chamada anterior (tamanho da string) e armazena no endereco de memoria tamanho buffer
+	mov al, byte [inputBuffer]							;;vai pegar o valor no endereco inputBuffer e armazena no segmento de registrador al
+	;;rax 64 ;; eax 32 ;; ax 16 ;; ah primeiros 8 bits + al segundos 8bits 
+	xor rcx, rcx						;;zera rcx
+	call toNumber					;;Input vem na codificacao ASCII ;; chamada de sistema que converte para hexadecimal. ;; codigo ascii -> hexadecimal ;;
 	mov [numeroLinhasA], al
 	SYS_WRITE 1, numeroLinhasA, 1
 	
 	SYS_WRITE 1, msgNumeroLinhasColunasA, msgSize1
-	SYS_READ 0, inputBuffer, 10
+	SYS_READ 0, inputBuffer, 2
 	mov [tamanhoBuffer], al
 	mov al, byte [inputBuffer]
 	mov rcx, 0
@@ -112,7 +113,7 @@ _start:
 	;;MATRIZ B
 
 	SYS_WRITE 1, msgNumeroLinhasColunasB, msgSize2
-    SYS_READ 0, inputBuffer, 10
+    SYS_READ 0, inputBuffer, 2
 	mov [tamanhoBuffer], al
     mov al, byte [inputBuffer]
     mov rcx, 0
@@ -121,7 +122,7 @@ _start:
     SYS_WRITE 1, numeroLinhasB, 1
     
 	SYS_WRITE 1, msgNumeroLinhasColunasB, msgSize2
-    SYS_READ 0, inputBuffer, 10
+    SYS_READ 0, inputBuffer, 2
     mov [tamanhoBuffer], al
 	mov al, byte [inputBuffer]
     mov rcx, 0 
@@ -230,13 +231,12 @@ toNumber:
 	;;aponta pro final da string (ultimo byte)
 	;;subtrai '0'
 	;;empilha
-    push rcx
 	mov rcx, [tamanhoBuffer]
-	dec rcx
-	dec rcx
+	dec rcx ;;vamos usar o tamanho retornado como indices
 	mov rsi, inputBuffer			
     add rsi, rcx						;;Apontando pro final do buffer
 	mov al, [rsi]						;;Passando o valor no endereco de rsi para rax
+	mov rdi, byteConverted				;;Passando o endereco final do numero convertido
 
 	mov rbx, 10                     ;;Valor de multiplicacao definido
     
@@ -278,9 +278,9 @@ toNumber:
 
 	
 	.notElevate:
-		pop rcx
-		cmp rcx, 0
-		je .exit
+		;;pop rcx
+		;;cmp rcx, 0
+		;;je .exit
 
 		add [rdi], rax
 		dec r8					;;Decrementa o contador de valores empilhados
