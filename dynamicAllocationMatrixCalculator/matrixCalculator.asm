@@ -185,11 +185,20 @@ _start:
 
     call creatingMatrix
 
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
     ;;-----Qual operacao ira realizar nas matrizes?----------------------------------------------------------------
     ;;--------------------------------------------------------------------------------------------------------------
-    SYS_READ 0, pedeOperacao, msgSize3
-
-	SYS_WRITE 1, operacaoEscolhida, 2
+    SYS_WRITE 1, pedeOperacao, msgSize3
+	
+	SYS_READ 0, operacaoEscolhida, 2
 
 	cmp byte [operacaoEscolhida], 0x2B			;;+ ascii
 	je sumMatrix
@@ -334,26 +343,29 @@ sumMatrix:
     ;Origem dos dados
     mov rsi, [matriz1PtrInicio]
     mov r8, [matriz2PtrInicio]
-    ;Destino dos dados
-    mov rdi, [matriz1PtrInicio] 
 
-    
     ;;loop de somar
-
     ;;Condicao de parada tamanho da matriz
-    mov rcx, 0      ;;Counter
+    xor rcx, rcx      ;;Counter
     
-    .loop: 
-        mov rax, [rsi+rcx*8]
+    .loop:
+		
+		;Destino dos dados - na propria matriz1
+		lea rdi, [rsi+rcx*8]
+		
+		cmp [matriz1PtrFim], rdi 
+        je .exit 
+
+		mov rax, [rsi+rcx*8]
         mov r9, [r8+rcx*8]
     
-		lea rdi, [rdi+rcx*8]
-        mov [rdi], rax
+		mov [rdi], rax
         add [rdi], r9
 
-        inc rcx
-        cmp [matriz1PtrFim], rdi
-        jne .loop
+        inc rcx		
+		jmp .loop
+
+	.exit:
 
     ret
 
