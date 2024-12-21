@@ -17,11 +17,11 @@
 %macro SYS_BRK 4
 	mov	rax, 12                 ; brk sys_call convention 
     xor rdi, rdi				; Passa 0 como argumento brk(0) 
-    syscall						; Retorna o endereco do program break
-	mov [%1], rax     ;;Passando o endereco do primeiro elemento da matriz  		
-	
 	push rcx			;;Vamos substituir por left shift
 	push rdx
+	syscall						; Retorna o endereco do program break
+	mov [%1], rax     ;;Passando o endereco do primeiro elemento da matriz  		
+
 	
 	mov rcx, [%3]			;;Numero de linhas da matriz
 	mov rdx, [%4]			;;Numero de colunas da matriz	
@@ -30,7 +30,10 @@
 	
 	shl rcx, %2				;;tamanho de cada elemento na matriz
 
-	lea rdi, [%1+rcx]   ;;Alocando %2*%3*%4 bytes. O segundo argumento serve para passar o tipo de enderecamento. O terceiro e quarto servem sao as dimensoes da matriz
+	mov rdi, [%1]
+	add rdi, rcx
+
+	;;lea rdi, [%1+rcx]   ;;Alocando %2*%3*%4 bytes. O segundo argumento serve para passar o tipo de enderecamento. O terceiro e quarto servem sao as dimensoes da matriz
 	mov rax, 12
 	syscall
 	pop rdx
@@ -69,6 +72,7 @@ section .bss
 	operacaoEscolhida: resb 2
     printableMatrixSum: resb 200
     byteConverted: resb 1
+	variableAddress: resq 1
 
 
 section .matrizA read write
@@ -137,7 +141,7 @@ _start:
     ;;Alocando memoria para matriz A
     mov rcx, numeroLinhasA
 	mov rdx, numeroColunasA
-	SYS_BRK matriz1PtrInicio, 8, numeroLinhasA, numeroColunasA
+	SYS_BRK matriz1PtrInicio, 3, numeroLinhasA, numeroColunasA				;;6 eh o numero de bits deslocados. Com isso, teremos espaco de 2^6 = 64 bytes para cada elementos da matriz
 	;;salvando o endereco do ultimo elemento da matriz
 	mov [matriz1PtrFim], rax
 
@@ -145,7 +149,7 @@ _start:
 	mov rcx, numeroLinhasB
     mov rdx, numeroColunasB
 	;;Alocando memoria para matriz B
-    SYS_BRK matriz2PtrInicio, 8, numeroLinhasB, numeroColunasB
+    SYS_BRK matriz2PtrInicio, 3, numeroLinhasB, numeroColunasB
 	;;salvando o endereco do ultimo elemento da matriz
 	mov [matriz2PtrFim], rax
 
@@ -156,25 +160,28 @@ _start:
 	mov rax, [rax]						;;Carregamos o valor no endereco apontado por esse ponteiro em rax
 	push rax
 
-	xor i, i
+	
 	
 	SYS_WRITE 1, pedeElementos, msgSize
 	
+	xor i, i
 
 	;;--MATRIZ-A--------
 	mov rcx, [matriz1PtrInicio]
 	mov rdx, [matriz1PtrFim] 
-	push rcx
-	push rdx
-	
+	;;push rcx
+	;;push rdx
+
 	call creatingMatrix
+
+	xor i, i
 
 	;;--MATRIZ-B--------
 
     mov rcx, [matriz2PtrInicio]
     mov rdx, [matriz2PtrFim]
-    push rcx
-    push rdx
+    ;;push rcx
+    ;;push rdx
 
     call creatingMatrix
 
@@ -202,26 +209,53 @@ _start:
 
 creatingMatrix:
 
-	pop rdx ;;ponteiro para o inicio
-	pop rcx	;;ponteiro para o fim
+	;;pop rcx   ;;ponteiro para o inicio
+	;;pop rdx	;;ponteiro para o fim
 
 	.loop:
+		lea rdi, [rcx+i*8]
+		cmp rdi, rdx
+    	jz .exit
+
+		push rcx 	;;ponteiro para o inicio
+		push rdx	;;ponteiro para o fim
+		push rdi
+
 		SYS_READ 0, inputBuffer, 10
+
+		pop rdi
+		pop rdx ;;ponteiro para o fim
+		pop rcx	;;ponteiro para o inicio
 
     	mov [tamanhoBuffer], rax                ;;SYS_READ retorna a quantidade de caracteres efetivamente lidos
 
-    	lea rdi, [rcx+i*8]
+    	
 
     	;;nao ta atualizando o endereco
 
+		push rcx 	;;ponteiro para o inicio
+		push rdx	;;ponteiro para o fim
+		push rdi 	;;salva endereco do elemento da matriz
+
+		mov byte [byteConverted], 0			;;Zerando o valor em byteConverted
+
     	call toNumber
 
-    	;;Temos quad word para cada elemento. Devemos incrementar 8 bytes
+		pop rdi
+		pop rdx ;;ponteiro para o fim
+		pop rcx	;;ponteiro para o inicio
+
+		mov rax, [byteConverted]
+		mov [rdi], rax
+		
+		;;Temos quad word para cada elemento. Devemos incrementar 8 bytes
 
 		inc i
 		;;Checka se o endereco percorrido eh igual ao endereco final da matriz
-    	cmp rdi, rdx
-    	jne .loop
+    	jmp .loop
+	
+	.exit:
+
 	ret
 
 toNumber:
@@ -231,8 +265,9 @@ toNumber:
 	;;aponta pro final da string (ultimo byte)
 	;;subtrai '0'
 	;;empilha
-	mov rcx, [tamanhoBuffer]
-	dec rcx ;;vamos usar o tamanho retornado como indices
+	mov rcx, [tamanhoBuffer] 		;;Retorna o que eu digitei + o enter
+	dec rcx ;;vamos subtrair o enter
+	dec rcx ;;vamos usar o tamanho como indice. comecamos em zero 
 	mov rsi, inputBuffer			
     add rsi, rcx						;;Apontando pro final do buffer
 	mov al, [rsi]						;;Passando o valor no endereco de rsi para rax
