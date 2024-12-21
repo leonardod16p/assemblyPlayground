@@ -200,18 +200,23 @@ _start:
 	
 	SYS_READ 0, operacaoEscolhida, 2
 
-	cmp byte [operacaoEscolhida], 0x2B			;;+ ascii
-	je sumMatrix
+	operations:
+		
+		cmp byte [operacaoEscolhida], 0x2B			;;+ ascii
+		jnz .notSum
+		call sumMatrix
+		.notSum:
+		
+		cmp byte [operacaoEscolhida], 0x2A			;;* ascii
+		jnz .notMultiply
+		call multiplyMatrix
+		.notMultiply:
 
-	cmp byte [operacaoEscolhida], 0x2A			;;* ascii
-	je multiplyMatrix
+    conversao:
+		call toString      
 
-
-    ;;conversao:
-		;;call toString      
-
-	;;print:
-		;;SYS_WRITE 1, printableMatrixSum, 200
+	print:
+		SYS_WRITE 1, printableMatrixSum, 200
 
     EXIT
 
