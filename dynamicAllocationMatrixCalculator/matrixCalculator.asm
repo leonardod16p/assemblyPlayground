@@ -382,47 +382,48 @@ sumMatrix:
 toString:
 	;;PARAMETROS DA FUNCAO toString()
 
+
+
     mov rsi, [matriz1PtrInicio]
-    mov rdi, printableMatrixSum  
+    mov r11, [matriz1PtrFim]
+	mov rdi, printableMatrixSum  
     mov rbx, 10                     ;;Valor de divisao definido
-    ;;add rdi, 200                     ;;rdi aponta pro final do buffer
+	
     xor rcx, rcx
     xor r8, r8
-	;;mov rcx, rdi                    ;;Final do buffer armazenado em rcx
+	xor r9, r9
+	xor r10, r10			;;percorre os enderecos dos elementos da matriz
+	
+	lea r10, [rsi+rcx*8]
+	
+	.loadNumber:
+	mov rax, [r10]			;;carregamos o valor em rsi+rcx*8 ;;rax = 12
 
     .converterLoop:
-        ;SYS_WRITE 1, rcx, 4 
         xor rdx, rdx
-        cmp rax, 10			;;Checkando se rax eh maior
-        jge $+2 			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;Gambiarra - Por que funciona?
-		div rbx             ;;Dividindo o valor por 10, jogando o quociente em rax e o resto em rdx 
-		add dl, '0'         ;;Converte para ascii
-        ;;mov byte [byteConverted], dl
-        ;;SYS_WRITE 1, byteConverted, 1
-        push rdx	;;Empilhando os algorismos para ordena-los
-		inc r8		;;Contando o numero de empilhamentos
-		;;mov [rdi], dl     ;;armazena em byteConverted printableMatrixSu
-		
-		;;inc rdi                     ;;rdi aponta pro final do buffer - 1 
+		div rbx             ;;Dividindo o valor por 10, jogando o quociente em rax e o resto em rdx. ex: rax = 10 e rdx = 2 
+		add dl, '0'         ;;Converte para ascii				rdx = 0x32 
+        push rdx			;;Empilhando os algorismos para ordena-los	push 0x32
+		inc r8				;;Contando o numero de empilhamentos		;;empilhei um	 
         cmp rax, 0
         jne .converterLoop
 
 
 	.desempilhar:
 		pop r9					;;Vamos desempilhar os valores na pilha em r9
-		mov [rdi], r9b			;;Pega o byte menos significativo de r9 e taca nesse endereco 
+		mov [rdi], r9			;;Pega o valor em r9 e taca no endereco da matrizPrintavel 
 		inc rdi					;;incrementa o addr em 1
 		dec r8					;;Decrementa o contador de valores empilhados
 		cmp r8, 0				;;0 - r8
 		jne .desempilhar
 
+		mov byte [rdi], 20h			;;adiciona um espaco em branco para formatacao do print
+		inc rdi
+
 		inc rcx
-        mov rax, [rsi+rcx*8]	;;Temos quad word para cada elemento. Devemos incrementar 8 bytes
-        cmp rcx, 9
-        jne .converterLoop
-    
-    ;;mov rcx, rdi                            ;;rcx aponta pro inicio da string
-    ;;mov rdi, printableMatrixSum              ;;rdi aponta pro inicio dos elementos da matriz
+        lea r10, [rsi+rcx*8]	;;Temos quad word para cada elemento. Devemos incrementar 8 bytes
+        cmp r11, r10			;;verifica se o endereco atual eh o mesmo que 
+		jne .loadNumber
 
     ret
 
